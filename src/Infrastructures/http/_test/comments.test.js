@@ -1,42 +1,45 @@
-const pool = require('../../database/postgres/pool');
-const ThreadsTableTestHelper = require('../../../../tests/ThreadsTableTestHelper');
-const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper');
-const AuthenticationsTableTestHelper = require('../../../../tests/AuthenticationsTableTestHelper');
 const container = require('../../container');
+const pool = require('../../database/postgres/pool');
 const createServer = require('../createServer');
+const CommentsTableTestHelper = require('../../../../tests/CommentsTableTestHelper');
+const AuthenticationsTableTestHelper = require('../../../../tests/AuthenticationsTableTestHelper');
+const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper');
+const ThreadsTableTestHeleper = require('../../../../tests/ThreadsTableTestHelper');
 const AuthenticationTokenManager = require('../../../Applications/security/AuthenticationTokenManager');
 
-describe('/Threads endpoint', () => {
-  let accessToken = null;
+describe('/Comments endpoint', () => {
+  let accessToken;
+  const threadId = 'thread-123';
 
   afterAll(async () => {
     await pool.end();
   });
 
   afterEach(async () => {
-    await ThreadsTableTestHelper.cleanTable();
+    await CommentsTableTestHelper.cleanTable();
     await AuthenticationsTableTestHelper.cleanTable();
     await UsersTableTestHelper.cleanTable();
+    await ThreadsTableTestHeleper.cleanTable();
   });
 
   beforeEach(async () => {
     await UsersTableTestHelper.addUser({ username: 'testing', id: 'user-123' });
     const tokenize = container.getInstance(AuthenticationTokenManager.name);
     accessToken = await tokenize.createAccessToken({ id: 'user-123' });
+    await ThreadsTableTestHeleper.addThread({ id: threadId, owner: 'user-123' });
   });
 
-  describe('when POST /threads', () => {
-    it('should response 201 and persisted thread', async () => {
+  describe('when POST /threads/{threadId}/comments', () => {
+    it('should response 201 and persisted comment', async () => {
       const requestPayload = {
-        title: 'justTesting',
-        body: 'new thread',
+        content: 'new Commnet',
       };
 
       const server = await createServer(container);
 
       const response = await server.inject({
         method: 'POST',
-        url: '/threads',
+        url: `/threads/${threadId}/comments`,
         payload: requestPayload,
         headers: {
           authorization: `Bearer ${accessToken}`,
@@ -46,19 +49,19 @@ describe('/Threads endpoint', () => {
       const responseJson = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(201);
       expect(responseJson.status).toEqual('success');
-      expect(responseJson.data.addedThread).toBeDefined();
+      expect(responseJson.data.addedComment).toBeDefined();
     });
 
-    it('should response 400 when request payload not contain needed propery', async () => {
+    it('should response 400 when request payload not contain needed property', async () => {
       const requestPayload = {
-        title: 'new thread',
+        comment: '',
       };
 
       const server = await createServer(container);
 
       const response = await server.inject({
         method: 'POST',
-        url: '/threads',
+        url: `/threads/${threadId}/comments`,
         payload: requestPayload,
         headers: {
           authorization: `Bearer ${accessToken}`,
@@ -68,20 +71,19 @@ describe('/Threads endpoint', () => {
       const responseJson = JSON.parse(response.payload);
       expect(response.statusCode).toEqual(400);
       expect(responseJson.status).toEqual('fail');
-      expect(responseJson.message).toEqual('tidak dapat membuat thread baru karena properti yang dibutuhkan tidak ada');
+      expect(responseJson.message).toEqual('tidak dapat membuat comment baru karena properti yang dibutuhkan tidak ada');
     });
 
     it('should response 400 when payload not meet data type specification', async () => {
       const requestPayload = {
-        title: 'new Thread',
-        body: true,
+        content: true,
       };
 
       const server = await createServer(container);
 
       const response = await server.inject({
         method: 'POST',
-        url: '/threads',
+        url: `/threads/${threadId}/comments`,
         payload: requestPayload,
         headers: {
           authorization: `Bearer ${accessToken}`,
@@ -92,7 +94,7 @@ describe('/Threads endpoint', () => {
 
       expect(response.statusCode).toEqual(400);
       expect(responseJson.status).toEqual('fail');
-      expect(responseJson.message).toEqual('tidak dapat membuat thread baru karena tipe data tidak sesuai');
+      expect(responseJson.message).toEqual('tidak dapat membuat comment baru karena tipe data tidak sesuai');
     });
   });
 });
