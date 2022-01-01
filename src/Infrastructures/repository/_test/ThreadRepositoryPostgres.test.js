@@ -53,4 +53,21 @@ describe('ThreadsRepositoryPostgres', () => {
       }));
     });
   });
+
+  describe('VerifyThread function', () => {
+    it('should persist verify thread action correctly', async () => {
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await ThreadsTableTestHeleper.addThread({ id: 'thread-123', owner: 'user-123' });
+
+      const threadRepositoryPostgres = new ThreadsRepositoryPostgres(pool, {});
+
+      await expect(threadRepositoryPostgres.verifyThreadById('thread-123')).resolves.not.toThrowError();
+    });
+
+    it('should throw error when thread not found in database', async () => {
+      const threadRepositoryPostgres = new ThreadsRepositoryPostgres(pool, {});
+
+      await expect(threadRepositoryPostgres.verifyThreadById('thread-123')).rejects.toThrowError();
+    });
+  });
 });

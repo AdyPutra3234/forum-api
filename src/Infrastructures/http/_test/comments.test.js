@@ -6,6 +6,7 @@ const AuthenticationsTableTestHelper = require('../../../../tests/Authentication
 const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper');
 const ThreadsTableTestHeleper = require('../../../../tests/ThreadsTableTestHelper');
 const AuthenticationTokenManager = require('../../../Applications/security/AuthenticationTokenManager');
+const CommentTableTestHelper = require('../../../../tests/CommentsTableTestHelper');
 
 describe('/Comments endpoint', () => {
   let accessToken;
@@ -95,6 +96,30 @@ describe('/Comments endpoint', () => {
       expect(response.statusCode).toEqual(400);
       expect(responseJson.status).toEqual('fail');
       expect(responseJson.message).toEqual('tidak dapat membuat comment baru karena tipe data tidak sesuai');
+    });
+  });
+  describe('when DELETE /threads/{threadId}/comments/{commentId}', () => {
+    it('should response with statusCode 200 and status success', async () => {
+      await CommentTableTestHelper.addComment({
+        id: 'comment-123',
+        owner: 'user-123',
+        threadId,
+      });
+
+      const server = await createServer(container);
+
+      const response = await server.inject({
+        method: 'DELETE',
+        url: `/threads/${threadId}/comments/comment-123`,
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const responseJson = JSON.parse(response.payload);
+
+      expect(response.statusCode).toEqual(200);
+      expect(responseJson.status).toEqual('success');
     });
   });
 });
