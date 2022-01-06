@@ -31,10 +31,19 @@ describe('CommentRepositoryPostgres', () => {
       await UsersTableTestHelper.addUser({ id: 'userA' });
       await ThreadsTableTestHeleper.addThread({ owner: 'userA', id: 'thread-321' });
 
-      await commentRepositoryPostgres.addComment({ newComment, threadId: 'thread-321', owner: 'userA' });
+      await commentRepositoryPostgres.addComment({
+        newComment, threadId: 'thread-321', owner: 'userA',
+      });
 
       const comment = await CommentTableTestHelper.findCommentById('comment-123');
+
       expect(comment).toHaveLength(1);
+      expect(comment[0].id).toEqual('comment-123');
+      expect(comment[0].content).toEqual('just comment');
+      expect(comment[0].owner).toEqual('userA');
+      expect(comment[0].thread_id).toEqual('thread-321');
+      expect(comment[0].is_deleted).toEqual(false);
+      expect(comment[0].date).toBeDefined();
     });
 
     it('should return addedComment object correctly', async () => {
@@ -59,6 +68,14 @@ describe('CommentRepositoryPostgres', () => {
   });
 
   describe('delete comment function', () => {
+    it('should throw error when comment not found', async () => {
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await ThreadsTableTestHeleper.addThread({ id: 'thread-123', owner: 'user-123' });
+
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+      await expect(commentRepositoryPostgres.deleteComment('comment-123', 'thread-123')).rejects.toThrowError(NotFoundError);
+    });
+
     it('should persist delete comment action correctly', async () => {
       await UsersTableTestHelper.addUser({ id: 'user-123' });
       await ThreadsTableTestHeleper.addThread({ id: 'thread-123', owner: 'user-123' });
@@ -111,6 +128,20 @@ describe('CommentRepositoryPostgres', () => {
     it('should throw error when commentId not found', async () => {
       const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
       await expect(commentRepositoryPostgres.verifyCommentOwner('comment-???', 'fake-user')).rejects.toThrowError(NotFoundError);
+    });
+  });
+
+  describe('getCommentsByThreadId function', () => {
+    it('should return commnets correctly', async () => {
+      const commentRepositoryPostgres = new CommentRepositoryPostgres(pool, {});
+
+      await UsersTableTestHelper.addUser({ id: 'user-123' });
+      await ThreadsTableTestHeleper.addThread({ id: 'thread-123', owner: 'user-123' });
+      await CommentTableTestHelper.addComment({ content: 'sebuah comment', threadId: 'thread-123', owner: 'user-123' });
+
+      const comments = await commentRepositoryPostgres.getCommentsByThreadId('thread-123');
+
+      expect(comments).toHaveLength(1);
     });
   });
 });

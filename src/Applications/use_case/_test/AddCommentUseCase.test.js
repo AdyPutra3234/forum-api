@@ -32,6 +32,7 @@ describe('PostCommentUseCase', () => {
     const addedComment = await getCommentUseCase.execute({ payload: useCasePayload, threadId: 'thread-123', owner: 'user-123' });
 
     expect(addedComment).toStrictEqual(expectedComment);
+    expect(mockThreadRepository.verifyThreadById).toBeCalledWith('thread-123');
     expect(mockCommentRepository.addComment).toBeCalledWith({
       newComment: new Comment({
         content: useCasePayload.content,

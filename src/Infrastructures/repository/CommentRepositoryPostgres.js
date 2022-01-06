@@ -31,7 +31,19 @@ class CommentRepositoryPostgres extends CommentRepositorty {
       values: [commentId, threadId],
     };
 
-    await this._pool.query(query);
+    const result = await this._pool.query(query);
+
+    if (!result.rowCount) throw new NotFoundError('Gagal menghapus comment, comment tidak ditemukan');
+  }
+
+  async getCommentsByThreadId(threadId) {
+    const query = {
+      text: 'SELECT comments.id, users.username, comments.date, comments.content, comments.is_deleted FROM comments LEFT JOIN users ON users.id = owner WHERE thread_id = $1 ORDER BY comments.date ASC',
+      values: [threadId],
+    };
+
+    const result = await this._pool.query(query);
+    return result.rows;
   }
 
   async checkAvailableCommentId(commentId, threadId) {

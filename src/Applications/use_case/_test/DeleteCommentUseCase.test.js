@@ -18,11 +18,12 @@ describe('DeleteCommentUseCase', () => {
 
     await deleteCommentUseCase.execute({
       commentId: 'comment-123',
-      credential: 'testCrededntialId',
+      credential: 'testCredentialId',
       threadId: 'thread-123',
     });
 
     expect(mockCommentRepository.checkAvailableCommentId).toHaveBeenLastCalledWith('comment-123', 'thread-123');
+    expect(mockCommentRepository.verifyCommentOwner).toHaveBeenLastCalledWith('comment-123', 'testCredentialId');
     expect(mockCommentRepository.deleteComment).toHaveBeenLastCalledWith('comment-123', 'thread-123');
   });
 });
